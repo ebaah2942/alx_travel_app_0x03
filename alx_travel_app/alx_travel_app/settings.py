@@ -14,6 +14,7 @@ from pathlib import Path
 import environ
 import os
 from decouple import config
+from django.conf import settings
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,12 +28,18 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-un$^mm8be$=dd&9)zl!qgc436)uexz=$&2lx%w2u6sov0x9i&3'
+SECRET_KEY = config('SECRET_KEY')
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".onrender.com",  # allow any subdomain on render
+    os.getenv("RENDER_EXTERNAL_HOSTNAME", ""),
+]
 
 
 # Application definition
@@ -147,4 +154,20 @@ CELERY_RESULT_BACKEND = "rpc://"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
+
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
+}
+
+if not settings.DEBUG:  # only apply in production
+    SWAGGER_SETTINGS["DEFAULT_API_URL"] = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME', '')}"
 
